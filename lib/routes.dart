@@ -5,7 +5,7 @@ import 'package:kmong_repo_a1/pages/login_page.dart';
 import 'package:kmong_repo_a1/pages/student_page.dart';
 
 final routes = {
-  "/": (BuildContext context) => LoginPage(),
+  "/": (BuildContext context) => const LoginPage(),
   "/join": (BuildContext context) => JoinPage(),
   "/home": (BuildContext context) => const HomePage(),
   "/student": (BuildContext context) => const StudentPage(),

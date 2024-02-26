@@ -21,12 +21,14 @@ class _HomePageState extends State<HomePage> {
   List<String> groupList = [];
   List<bool> selectedStudentList = [];
   var _selectedGroup = "전체";
+  var selectedGroupId = 0;
   final backgroundColor = const Color.fromARGB(255, 250, 250, 210);
   final nameController = TextEditingController();
   final phoneNumberController = TextEditingController();
 
   @override
   void initState() {
+    super.initState();
     Future.delayed(const Duration(seconds: 0)).then((_) async {
       var db =
           await openDatabase("student.db", version: 1, onCreate: _onCreate);
@@ -66,21 +68,72 @@ class _HomePageState extends State<HomePage> {
               return Student(
                   name: students[index]['name'],
                   phoneNumber: students[index]['phone_number'],
-                  id: students[index]['student_id']);
+                  id: students[index]['student_id'],
+                  groupId: students[index]['group_id']);
             },
           );
         }
       });
     });
-    super.initState();
   }
+
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   Future.delayed(const Duration(seconds: 0)).then((_) async {
+  //     var db =
+  //         await openDatabase("student.db", version: 1, onCreate: _onCreate);
+
+  //     userData = await getUserData();
+
+  //     if (context.mounted && userData['data'] == null) {
+  //       const storage = FlutterSecureStorage();
+  //       await storage.delete(
+  //         key: "token",
+  //       );
+
+  //       if (context.mounted) Navigator.pushNamed(context, "/");
+  //     }
+
+  //     final List<Map<String, dynamic>> groups =
+  //         await db.rawQuery("SELECT * FROM student_group");
+  //     final List<Map<String, dynamic>> students = await db
+  //         .rawQuery("SELECT * FROM student WHERE group_id=$selectedGroupId");
+
+  //     setState(() {
+  //       if (groups.isEmpty) {
+  //         groupList = [];
+  //       } else {
+  //         groupList = List.generate(groups.length, (index) {
+  //           return groups[index]['name'];
+  //         });
+  //       }
+
+  //       if (students.isEmpty) {
+  //         studentList = [];
+  //       } else {
+  //         selectedStudentList = List<bool>.filled(students.length, false);
+  //         studentList = List.generate(
+  //           students.length,
+  //           (index) {
+  //             return Student(
+  //                 name: students[index]['name'],
+  //                 phoneNumber: students[index]['phone_number'],
+  //                 id: students[index]['student_id'],
+  //                 groupId: students[index]['group_id']);
+  //           },
+  //         );
+  //       }
+  //     });
+  //   });
+  // }
 
   _onCreate(Database db, int version) async {
     await db.execute(
-        "CREATE TABLE student_group (group_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)");
+        "CREATE TABLE student_group(group_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)");
     await db.execute("INSERT INTO student_group(name) VALUES('전체')");
     await db.execute(
-        "CREATE TABLE student (student_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone_number TEXT NOT NULL, group_id INTEGER NOT NULLm, FOREIGN KEY(student_id) REFERENCES student_group(student_id))");
+        "CREATE TABLE student(student_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone_number TEXT NOT NULL, group_id INTEGER NOT NULL, FOREIGN KEY(student_id) REFERENCES student_group(student_id))");
   }
 
   @override
@@ -126,9 +179,33 @@ class _HomePageState extends State<HomePage> {
                         return DropdownMenuItem<String>(
                             value: group, child: Text(group));
                       }).toList(),
-                      onChanged: (selectGroup) {
+                      onChanged: (selectGroup) async {
+                        selectedGroupId = groupList.indexOf(selectGroup!);
+                        var db = await openDatabase("student.db", version: 1);
+
+                        List<Map<String, dynamic>> students;
+                        if (selectedGroupId == 0) {
+                          students = await db.rawQuery("SELECT * FROM student");
+                        } else {
+                          students = await db.rawQuery(
+                              "SELECT * FROM student WHERE group_id=$selectedGroupId");
+                        }
+
                         setState(() {
-                          _selectedGroup = selectGroup!;
+                          _selectedGroup = selectGroup;
+
+                          selectedStudentList =
+                              List<bool>.filled(students.length, false);
+                          studentList = List.generate(
+                            students.length,
+                            (index) {
+                              return Student(
+                                  name: students[index]['name'],
+                                  phoneNumber: students[index]['phone_number'],
+                                  id: students[index]['student_id'],
+                                  groupId: students[index]['group_id']);
+                            },
+                          );
                         });
                       }),
                 ],
@@ -168,7 +245,21 @@ class _HomePageState extends State<HomePage> {
                     ButtonWidget(
                         text: "학생 관리",
                         handler: () {
-                          Navigator.pushNamed(context, "/student");
+                          var selectCount = 0;
+                          var idx = 0;
+
+                          for (int i = 0; i < selectedStudentList.length; i++) {
+                            if (selectedStudentList[i] == true) {
+                              selectCount++;
+                              idx = i;
+                            }
+                          }
+                          if (selectCount != 1) {
+                            Get.snackbar("오류", "한 명의 학생만 선택해주세요");
+                          } else {
+                            Navigator.pushNamed(context, "/student",
+                                arguments: studentList[idx]);
+                          }
                         },
                         backgroundColor: Colors.yellow),
                     const SizedBox(
@@ -220,7 +311,31 @@ class _HomePageState extends State<HomePage> {
                                       var db = await openDatabase("student.db",
                                           version: 1);
                                       await db.rawInsert(
-                                          "INSERT INTO student(name, phone_number, group_id) VALUES($name, $phoneNumber, 0)");
+                                          "INSERT INTO student(name, phone_number, group_id) VALUES('$name', '$phoneNumber', 0)");
+                                      var groupId =
+                                          groupList.indexOf(_selectedGroup);
+                                      List<Map<String, dynamic>> students =
+                                          await db.rawQuery(
+                                              "SELECT * FROM student WHERE group_id='$groupId'");
+
+                                      debugPrint(students.toString());
+                                      setState(() {
+                                        selectedStudentList = List<bool>.filled(
+                                            students.length, false);
+                                        studentList = List.generate(
+                                          students.length,
+                                          (index) {
+                                            return Student(
+                                                name: students[index]['name'],
+                                                phoneNumber: students[index]
+                                                    ['phone_number'],
+                                                id: students[index]
+                                                    ['student_id'],
+                                                groupId: students[index]
+                                                    ['group_id']);
+                                          },
+                                        );
+                                      });
                                     },
                                     child: const Text("추가"))
                               ]);
