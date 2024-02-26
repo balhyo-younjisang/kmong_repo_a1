@@ -7,7 +7,7 @@ import 'package:kmong_repo_a1/widgets/custom_appbar.dart';
 import 'package:kmong_repo_a1/widgets/input.dart';
 
 class LoginPage extends StatefulWidget {
-  LoginPage({super.key});
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -21,12 +21,11 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void initState() {
-    const storage = FlutterSecureStorage();
-    final token = storage.read(key: "token");
-
-    Future.delayed(const Duration(seconds: 0)).then((_) {
+    Future.delayed(const Duration(seconds: 0)).then((_) async {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: "token");
       // ignore: unnecessary_null_comparison
-      if (token != null) {
+      if (context.mounted && token != null) {
         Navigator.pushNamed(context, "/home");
       }
     });

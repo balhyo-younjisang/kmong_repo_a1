@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get.dart';
 import 'package:kmong_repo_a1/apis/user.dart';
+import 'package:kmong_repo_a1/models/student.dart';
 import 'package:kmong_repo_a1/widgets/button.dart';
 import 'package:kmong_repo_a1/widgets/custom_appbar.dart';
+import 'package:kmong_repo_a1/widgets/input.dart';
+import 'package:sqflite/sqflite.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,33 +16,91 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  dynamic userData = "총 발송량 : 0, 일일 최대 발송량: 0";
-  dynamic groupList = [];
+  dynamic userData = {'data': "총 발송량 : 0, 일일 최대 발송량: 0"};
+  List<Student> studentList = [];
+  List<String> groupList = [];
+  List<bool> selectedStudentList = [];
+  var _selectedGroup = "전체";
   final backgroundColor = const Color.fromARGB(255, 250, 250, 210);
+  final nameController = TextEditingController();
+  final phoneNumberController = TextEditingController();
 
   @override
   void initState() {
-    Future.delayed(const Duration(seconds: 3)).then((_) async {
+    Future.delayed(const Duration(seconds: 0)).then((_) async {
+      var db =
+          await openDatabase("student.db", version: 1, onCreate: _onCreate);
+
       userData = await getUserData();
+
+      if (context.mounted && userData['data'] == null) {
+        const storage = FlutterSecureStorage();
+        await storage.delete(
+          key: "token",
+        );
+
+        if (context.mounted) Navigator.pushNamed(context, "/");
+      }
+
+      final List<Map<String, dynamic>> groups =
+          await db.rawQuery("SELECT * FROM student_group");
+      final List<Map<String, dynamic>> students =
+          await db.rawQuery("SELECT * FROM student");
+
+      setState(() {
+        if (groups.isEmpty) {
+          groupList = [];
+        } else {
+          groupList = List.generate(groups.length, (index) {
+            return groups[index]['name'];
+          });
+        }
+
+        if (students.isEmpty) {
+          studentList = [];
+        } else {
+          selectedStudentList = List<bool>.filled(students.length, false);
+          studentList = List.generate(
+            students.length,
+            (index) {
+              return Student(
+                  name: students[index]['name'],
+                  phoneNumber: students[index]['phone_number'],
+                  id: students[index]['student_id']);
+            },
+          );
+        }
+      });
     });
     super.initState();
   }
 
+  _onCreate(Database db, int version) async {
+    await db.execute(
+        "CREATE TABLE student_group (group_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)");
+    await db.execute("INSERT INTO student_group(name) VALUES('전체')");
+    await db.execute(
+        "CREATE TABLE student (student_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone_number TEXT NOT NULL, group_id INTEGER NOT NULLm, FOREIGN KEY(student_id) REFERENCES student_group(student_id))");
+  }
+
   @override
   Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
         return false;
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: backgroundColor,
         appBar: const PreferredSize(
           preferredSize: Size.fromHeight(60),
           child: AuthAppBar(),
         ),
-        body: Column(
-          children: [
-            Container(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Container(
                 alignment: Alignment.center,
                 height: 26,
                 child: Text(
@@ -47,33 +110,128 @@ class _HomePageState extends State<HomePage> {
                       .replaceAll("}", ''),
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w600),
-                )),
-            SizedBox(
-              width: 300,
-              height: 50,
-              child: Row(
+                ),
+              ),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ButtonWidget(
-                      text: "그룹 관리",
-                      handler: () {
-                        Navigator.pushNamed(context, "/group");
-                      },
-                      backgroundColor: Colors.yellow),
+                  const Text("학생 그룹"),
                   const SizedBox(
-                    width: 30,
+                    width: 20,
                   ),
-                  ButtonWidget(
-                      text: "발송 시작",
-                      fontColor: Colors.white,
-                      handler: () {
-                        Navigator.pushNamed(context, "/group");
-                      },
-                      backgroundColor: const Color.fromARGB(255, 105, 105, 105))
+                  DropdownButton(
+                      value: _selectedGroup,
+                      items: groupList
+                          .map<DropdownMenuItem<String>>((String group) {
+                        return DropdownMenuItem<String>(
+                            value: group, child: Text(group));
+                      }).toList(),
+                      onChanged: (selectGroup) {
+                        setState(() {
+                          _selectedGroup = selectGroup!;
+                        });
+                      }),
                 ],
               ),
-            ),
-          ],
+              Column(
+                children: [
+                  SizedBox(
+                    height: 360,
+                    child: ListView.builder(
+                      itemCount: studentList.length,
+                      itemBuilder: (context, index) {
+                        return Card(
+                          child: CheckboxListTile(
+                            title: Text(studentList[index].name),
+                            value: selectedStudentList[index],
+                            onChanged: (val) {
+                              setState(() {
+                                selectedStudentList[index] = val!;
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              SizedBox(
+                width: 400,
+                height: 50,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ButtonWidget(
+                        text: "학생 관리",
+                        handler: () {
+                          Navigator.pushNamed(context, "/student");
+                        },
+                        backgroundColor: Colors.yellow),
+                    const SizedBox(
+                      width: 30,
+                    ),
+                    ButtonWidget(
+                        text: "발송 시작",
+                        fontColor: Colors.white,
+                        handler: () {
+                          Navigator.pushNamed(context, "/send");
+                        },
+                        backgroundColor:
+                            const Color.fromARGB(255, 105, 105, 105)),
+                    const SizedBox(
+                      width: 30,
+                    ),
+                    ButtonWidget(
+                        text: "학생 추가",
+                        fontColor: Colors.white,
+                        handler: () {
+                          Get.defaultDialog(
+                              title: "학생 추가",
+                              content: Column(
+                                children: [
+                                  InputWidget(
+                                      text: "이름을 입력해주세요",
+                                      isSecure: false,
+                                      controller: nameController),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
+                                  InputWidget(
+                                      text: "전화번호를 입력해주세요",
+                                      isSecure: false,
+                                      controller: phoneNumberController)
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                    onPressed: Get.back,
+                                    child: const Text("취소")),
+                                TextButton(
+                                    onPressed: () async {
+                                      String name = nameController.text;
+                                      String phoneNumber = phoneNumberController
+                                          .text
+                                          .replaceAll("-", "");
+
+                                      var db = await openDatabase("student.db",
+                                          version: 1);
+                                      await db.rawInsert(
+                                          "INSERT INTO student(name, phone_number, group_id) VALUES($name, $phoneNumber, 0)");
+                                    },
+                                    child: const Text("추가"))
+                              ]);
+                        },
+                        backgroundColor:
+                            const Color.fromARGB(255, 105, 105, 105)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
