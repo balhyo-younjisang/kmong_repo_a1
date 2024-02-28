@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:kmong_repo_a1/apis/user.dart';
 import 'package:kmong_repo_a1/models/student.dart';
+import 'package:kmong_repo_a1/utils/file.dart';
 import 'package:kmong_repo_a1/widgets/button.dart';
 import 'package:kmong_repo_a1/widgets/custom_appbar.dart';
 import 'package:kmong_repo_a1/widgets/input.dart';
@@ -30,12 +31,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 0)).then((_) async {
+      userData = await getUserData();
       var db =
           await openDatabase("student.db", version: 1, onCreate: _onCreate);
-
-      userData = await getUserData();
-
-      if (context.mounted && userData['data'] == null) {
+      // debugPrint(userData.toString());
+      if (context.mounted && userData['code'] != 200) {
         const storage = FlutterSecureStorage();
         await storage.delete(
           key: "token",
@@ -77,57 +77,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   Future.delayed(const Duration(seconds: 0)).then((_) async {
-  //     var db =
-  //         await openDatabase("student.db", version: 1, onCreate: _onCreate);
-
-  //     userData = await getUserData();
-
-  //     if (context.mounted && userData['data'] == null) {
-  //       const storage = FlutterSecureStorage();
-  //       await storage.delete(
-  //         key: "token",
-  //       );
-
-  //       if (context.mounted) Navigator.pushNamed(context, "/");
-  //     }
-
-  //     final List<Map<String, dynamic>> groups =
-  //         await db.rawQuery("SELECT * FROM student_group");
-  //     final List<Map<String, dynamic>> students = await db
-  //         .rawQuery("SELECT * FROM student WHERE group_id=$selectedGroupId");
-
-  //     setState(() {
-  //       if (groups.isEmpty) {
-  //         groupList = [];
-  //       } else {
-  //         groupList = List.generate(groups.length, (index) {
-  //           return groups[index]['name'];
-  //         });
-  //       }
-
-  //       if (students.isEmpty) {
-  //         studentList = [];
-  //       } else {
-  //         selectedStudentList = List<bool>.filled(students.length, false);
-  //         studentList = List.generate(
-  //           students.length,
-  //           (index) {
-  //             return Student(
-  //                 name: students[index]['name'],
-  //                 phoneNumber: students[index]['phone_number'],
-  //                 id: students[index]['student_id'],
-  //                 groupId: students[index]['group_id']);
-  //           },
-  //         );
-  //       }
-  //     });
-  //   });
-  // }
-
   _onCreate(Database db, int version) async {
     await db.execute(
         "CREATE TABLE student_group(group_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)");
@@ -168,7 +117,7 @@ class _HomePageState extends State<HomePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("학생 그룹"),
+                  const Text("데이터 그룹"),
                   const SizedBox(
                     width: 20,
                   ),
@@ -243,7 +192,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ButtonWidget(
-                        text: "학생 관리",
+                        text: "데이터 관리",
                         handler: () {
                           var selectCount = 0;
                           var idx = 0;
@@ -255,7 +204,7 @@ class _HomePageState extends State<HomePage> {
                             }
                           }
                           if (selectCount != 1) {
-                            Get.snackbar("오류", "한 명의 학생만 선택해주세요");
+                            Get.snackbar("오류", "한 개의 데이터만 선택해주세요");
                           } else {
                             Navigator.pushNamed(context, "/student",
                                 arguments: studentList[idx]);
@@ -268,8 +217,21 @@ class _HomePageState extends State<HomePage> {
                     ButtonWidget(
                         text: "발송 시작",
                         fontColor: Colors.white,
-                        handler: () {
-                          Navigator.pushNamed(context, "/send");
+                        handler: () async {
+                          List<String> selectStudentsPhoneNumber = [];
+                          for (int i = 0; i < selectedStudentList.length; i++) {
+                            if (selectedStudentList[i] == true) {
+                              selectStudentsPhoneNumber
+                                  .add(studentList[i].phoneNumber);
+                            }
+                          }
+
+                          if (selectStudentsPhoneNumber.isEmpty) {
+                            Get.snackbar("오류", "데이터를 1개 이상 선택해주세요");
+                          } else {
+                            Navigator.pushNamed(context, "/send",
+                                arguments: selectStudentsPhoneNumber);
+                          }
                         },
                         backgroundColor:
                             const Color.fromARGB(255, 105, 105, 105)),
@@ -277,11 +239,11 @@ class _HomePageState extends State<HomePage> {
                       width: 30,
                     ),
                     ButtonWidget(
-                        text: "학생 추가",
+                        text: "데이터 추가",
                         fontColor: Colors.white,
                         handler: () {
                           Get.defaultDialog(
-                              title: "학생 추가",
+                              title: "데이터 추가",
                               content: Column(
                                 children: [
                                   InputWidget(
@@ -300,7 +262,13 @@ class _HomePageState extends State<HomePage> {
                               actions: [
                                 TextButton(
                                     onPressed: Get.back,
-                                    child: const Text("취소")),
+                                    child: const Text("닫기")),
+                                TextButton(
+                                  onPressed: () {
+                                    openExcelFile();
+                                  },
+                                  child: const Text('불러오기'),
+                                ),
                                 TextButton(
                                     onPressed: () async {
                                       String name = nameController.text;
@@ -336,6 +304,8 @@ class _HomePageState extends State<HomePage> {
                                           },
                                         );
                                       });
+
+                                      Get.back();
                                     },
                                     child: const Text("추가"))
                               ]);
@@ -345,6 +315,20 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
+              const SizedBox(
+                height: 20,
+              ),
+              InkWell(
+                onTap: () {
+                  Navigator.pushNamed(context, "/admin");
+                },
+                child: const Text(
+                  "관리자페이지",
+                  style: TextStyle(
+                      color: Colors.lightBlue,
+                      decoration: TextDecoration.underline),
+                ),
+              )
             ],
           ),
         ),

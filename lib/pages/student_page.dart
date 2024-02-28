@@ -36,8 +36,6 @@ class _StudentPageState extends State<StudentPage> {
           });
         }
 
-        debugPrint(groupList.toString());
-        debugPrint(selectedStudent.groupId.toString());
         selectedGroupName = groupList[selectedStudent.groupId];
       });
     });

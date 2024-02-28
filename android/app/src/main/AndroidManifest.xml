@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="kmong_repo_a1"
+        android:label="메시지 발송"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

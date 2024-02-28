@@ -83,10 +83,6 @@ class _LoginPageState extends State<LoginPage> {
                           if (!context.mounted) return;
 
                           if (res['code'] == 200) {
-                            const storage = FlutterSecureStorage();
-                            await storage.write(
-                                key: "token", value: res['token']);
-
                             if (!context.mounted) return;
                             Navigator.pushNamed(context, "/home");
                           } else {
@@ -108,8 +104,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(
-                  height: 50,
-                )
+                  height: 30,
+                ),
+                const Text("문의 : 02-546-1113")
               ],
             ),
           ),

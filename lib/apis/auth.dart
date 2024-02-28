@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 Future<Map<String, dynamic>> postCreateUser(
@@ -41,7 +42,14 @@ Future<Map<String, dynamic>> postSignInUser(
     dynamic jsonResponse = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      return {"message": "로그인 성공", "code": 200, "token": jsonResponse['data']};
+      debugPrint(jsonResponse.toString());
+      const storage = FlutterSecureStorage();
+      await storage.write(key: "token", value: jsonResponse['data']);
+
+      return {
+        "message": "로그인 성공",
+        "code": 200,
+      };
     } else {
       return {"message": jsonResponse['message'], "code": jsonResponse['code']};
     }
