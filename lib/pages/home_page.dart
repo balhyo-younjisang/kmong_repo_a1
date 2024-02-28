@@ -264,8 +264,39 @@ class _HomePageState extends State<HomePage> {
                                     onPressed: Get.back,
                                     child: const Text("닫기")),
                                 TextButton(
-                                  onPressed: () {
-                                    openExcelFile();
+                                  onPressed: () async {
+                                    await openExcelFile();
+                                    var db = await openDatabase("student.db",
+                                        version: 1);
+                                    var groupId =
+                                        groupList.indexOf(_selectedGroup);
+                                    List<
+                                        Map<String,
+                                            dynamic>> students = await db.rawQuery(
+                                        "SELECT * FROM student WHERE group_id='$groupId'");
+
+                                    Future.delayed(const Duration(seconds: 0))
+                                        .then((_) async {
+                                      setState(() {
+                                        selectedStudentList = List<bool>.filled(
+                                            students.length, false);
+                                        studentList = List.generate(
+                                          students.length,
+                                          (index) {
+                                            return Student(
+                                                name: students[index]['name'],
+                                                phoneNumber: students[index]
+                                                    ['phone_number'],
+                                                id: students[index]
+                                                    ['student_id'],
+                                                groupId: students[index]
+                                                    ['group_id']);
+                                          },
+                                        );
+                                      });
+                                    });
+
+                                    Get.back();
                                   },
                                   child: const Text('불러오기'),
                                 ),
@@ -286,7 +317,7 @@ class _HomePageState extends State<HomePage> {
                                           await db.rawQuery(
                                               "SELECT * FROM student WHERE group_id='$groupId'");
 
-                                      debugPrint(students.toString());
+                                      // debugPrint(students.toString());
                                       setState(() {
                                         selectedStudentList = List<bool>.filled(
                                             students.length, false);
