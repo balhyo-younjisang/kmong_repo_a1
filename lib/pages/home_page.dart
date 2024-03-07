@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   List<bool> selectedStudentList = [];
   var _selectedGroup = "전체";
   var selectedGroupId = 0;
+  var addStudentGroupName = "전체";
   final backgroundColor = const Color.fromARGB(255, 250, 250, 210);
   final nameController = TextEditingController();
   final phoneNumberController = TextEditingController();
@@ -50,12 +51,14 @@ class _HomePageState extends State<HomePage> {
           await db.rawQuery("SELECT * FROM student");
 
       setState(() {
-        if (groups.isEmpty) {
-          groupList = [];
+        if (groups.isEmpty || groups.length == 1) {
+          groupList = ["전체"];
         } else {
+          debugPrint(groups.toString());
           groupList = List.generate(groups.length, (index) {
             return groups[index]['name'];
           });
+          groupList.insert(0, "전체");
         }
 
         if (students.isEmpty) {
@@ -122,7 +125,7 @@ class _HomePageState extends State<HomePage> {
                     width: 20,
                   ),
                   DropdownButton(
-                      value: _selectedGroup,
+                      value: _selectedGroup.isNotEmpty ? _selectedGroup : "전체",
                       items: groupList
                           .map<DropdownMenuItem<String>>((String group) {
                         return DropdownMenuItem<String>(
@@ -168,7 +171,14 @@ class _HomePageState extends State<HomePage> {
                       itemBuilder: (context, index) {
                         return Card(
                           child: CheckboxListTile(
-                            title: Text(studentList[index].name),
+                            title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Text(studentList[index].name),
+                                  Text(studentList[index].phoneNumber),
+                                  Text(groupList[studentList[index].groupId]),
+                                ]),
                             value: selectedStudentList[index],
                             onChanged: (val) {
                               setState(() {
@@ -244,20 +254,44 @@ class _HomePageState extends State<HomePage> {
                         handler: () {
                           Get.defaultDialog(
                               title: "데이터 추가",
-                              content: Column(
-                                children: [
-                                  InputWidget(
-                                      text: "이름을 입력해주세요",
-                                      isSecure: false,
-                                      controller: nameController),
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-                                  InputWidget(
-                                      text: "전화번호를 입력해주세요",
-                                      isSecure: false,
-                                      controller: phoneNumberController)
-                                ],
+                              content: StatefulBuilder(
+                                builder: (BuildContext context,
+                                    StateSetter setState) {
+                                  return Column(
+                                    children: [
+                                      InputWidget(
+                                          text: "이름을 입력해주세요",
+                                          isSecure: false,
+                                          controller: nameController),
+                                      const SizedBox(
+                                        height: 20,
+                                      ),
+                                      InputWidget(
+                                          text: "전화번호를 입력해주세요",
+                                          isSecure: false,
+                                          controller: phoneNumberController),
+                                      const SizedBox(
+                                        height: 20,
+                                      ),
+                                      DropdownButton(
+                                        value: addStudentGroupName.isNotEmpty
+                                            ? addStudentGroupName
+                                            : "전체",
+                                        items: groupList
+                                            .map<DropdownMenuItem<String>>(
+                                                (String group) {
+                                          return DropdownMenuItem<String>(
+                                              value: group, child: Text(group));
+                                        }).toList(),
+                                        onChanged: (selectGroup) {
+                                          setState(() {
+                                            addStudentGroupName = selectGroup!;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                               actions: [
                                 TextButton(
@@ -306,16 +340,24 @@ class _HomePageState extends State<HomePage> {
                                       String phoneNumber = phoneNumberController
                                           .text
                                           .replaceAll("-", "");
+                                      int addGroupId = groupList.indexWhere(
+                                          (element) =>
+                                              element == addStudentGroupName);
 
                                       var db = await openDatabase("student.db",
                                           version: 1);
                                       await db.rawInsert(
-                                          "INSERT INTO student(name, phone_number, group_id) VALUES('$name', '$phoneNumber', 0)");
-                                      var groupId =
-                                          groupList.indexOf(_selectedGroup);
-                                      List<Map<String, dynamic>> students =
-                                          await db.rawQuery(
-                                              "SELECT * FROM student WHERE group_id='$groupId'");
+                                          "INSERT INTO student(name, phone_number, group_id) VALUES('$name', '$phoneNumber', '$addGroupId')");
+                                      List<Map<String, dynamic>> students;
+                                      if (selectedGroupId == 0) {
+                                        students = await db
+                                            .rawQuery("SELECT * FROM student");
+                                      } else {
+                                        var groupId =
+                                            groupList.indexOf(_selectedGroup);
+                                        students = await db.rawQuery(
+                                            "SELECT * FROM student WHERE group_id='$groupId'");
+                                      }
 
                                       // debugPrint(students.toString());
                                       setState(() {

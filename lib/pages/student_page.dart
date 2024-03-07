@@ -17,7 +17,8 @@ class _StudentPageState extends State<StudentPage> {
   final groupController = TextEditingController();
   late Student selectedStudent;
   late String selectedGroupName = "전체";
-  List<String> groupList = [];
+  late String selectedRemoveGroupName = "전체";
+  List<String> groupList = ["전체"];
 
   @override
   void initState() {
@@ -34,6 +35,7 @@ class _StudentPageState extends State<StudentPage> {
           groupList = List.generate(groups.length, (index) {
             return groups[index]['name'];
           });
+          groupList.insert(0, "전체");
         }
 
         selectedGroupName = groupList[selectedStudent.groupId];
@@ -64,7 +66,7 @@ class _StudentPageState extends State<StudentPage> {
                 width: 20,
               ),
               DropdownButton(
-                value: selectedGroupName,
+                value: selectedGroupName.isNotEmpty ? selectedGroupName : "전체",
                 items: groupList.map<DropdownMenuItem<String>>((String group) {
                   return DropdownMenuItem<String>(
                       value: group, child: Text(group));
@@ -125,54 +127,128 @@ class _StudentPageState extends State<StudentPage> {
                       }
                     },
                     backgroundColor: Colors.yellow),
-                const SizedBox(
-                  width: 30,
-                ),
-                ButtonWidget(
-                    text: "그룹 추가",
-                    fontColor: Colors.white,
-                    handler: () {
-                      Get.defaultDialog(
-                          title: "그룹 추가",
-                          content: Column(
-                            children: [
-                              InputWidget(
-                                  text: "이름을 입력해주세요",
-                                  isSecure: false,
-                                  controller: groupController),
-                              const SizedBox(
-                                height: 20,
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                                onPressed: Get.back, child: const Text("취소")),
-                            TextButton(
-                                onPressed: () async {
-                                  String name = groupController.text;
+              ],
+            ),
+          ),
+          const SizedBox(
+            height: 20,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ButtonWidget(
+                  text: "그룹 추가",
+                  fontColor: Colors.white,
+                  handler: () {
+                    Get.defaultDialog(
+                        title: "그룹 추가",
+                        content: Column(
+                          children: [
+                            InputWidget(
+                                text: "이름을 입력해주세요",
+                                isSecure: false,
+                                controller: groupController),
+                            const SizedBox(
+                              height: 20,
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                              onPressed: Get.back, child: const Text("취소")),
+                          TextButton(
+                              onPressed: () async {
+                                String name = groupController.text;
 
-                                  var db = await openDatabase("student.db",
-                                      version: 1);
-                                  await db.rawInsert(
-                                      "INSERT INTO student_group(name) VALUES('$name')");
-                                  List<Map<String, dynamic>> groups = await db
-                                      .rawQuery("SELECT * FROM student_group");
+                                var db = await openDatabase("student.db",
+                                    version: 1);
+                                await db.rawInsert(
+                                    "INSERT INTO student_group(name) VALUES('$name')");
+                                List<Map<String, dynamic>> groups = await db
+                                    .rawQuery("SELECT * FROM student_group");
 
-                                  setState(() {
+                                setState(() {
+                                  if (groups.isEmpty || groups.length == 1) {
+                                    groupList = ["전체"];
+                                  } else {
                                     groupList =
                                         List.generate(groups.length, (index) {
                                       return groups[index]['name'];
                                     });
+                                    groupList.insert(0, "전체");
+                                  }
+                                });
+
+                                Get.back();
+                              },
+                              child: const Text("추가"))
+                        ]);
+                  },
+                  backgroundColor: const Color.fromARGB(255, 105, 105, 105)),
+              const SizedBox(
+                width: 30,
+              ),
+              ButtonWidget(
+                  text: "그룹 삭제",
+                  fontColor: Colors.white,
+                  handler: () {
+                    Get.defaultDialog(
+                        title: "그룹 삭제",
+                        content: StatefulBuilder(builder:
+                            (BuildContext context, StateSetter setState) {
+                          return Column(
+                            children: [
+                              DropdownButton(
+                                value: selectedRemoveGroupName.isNotEmpty
+                                    ? selectedRemoveGroupName
+                                    : "전체",
+                                items: groupList.map<DropdownMenuItem<String>>(
+                                    (String group) {
+                                  return DropdownMenuItem<String>(
+                                      value: group, child: Text(group));
+                                }).toList(),
+                                onChanged: (selectGroup) {
+                                  setState(() {
+                                    selectedRemoveGroupName = selectGroup!;
                                   });
                                 },
-                                child: const Text("추가"))
-                          ]);
-                    },
-                    backgroundColor: const Color.fromARGB(255, 105, 105, 105)),
-              ],
-            ),
-          ),
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                            ],
+                          );
+                        }),
+                        actions: [
+                          TextButton(
+                              onPressed: Get.back, child: const Text("취소")),
+                          TextButton(
+                              onPressed: () async {
+                                var db = await openDatabase("student.db",
+                                    version: 1);
+                                var groupId =
+                                    groupList.indexOf(selectedRemoveGroupName);
+
+                                if (groupId == 0) {
+                                  Get.snackbar("오류", "전체 그룹은 삭제할 수 없습니다");
+                                  return;
+                                }
+
+                                await db.rawDelete(
+                                    "DELETE FROM student_group WHERE group_id=?",
+                                    [groupId]);
+
+                                if (!context.mounted) {
+                                  return;
+                                }
+                                Navigator.pushNamed(context, "/home");
+                              },
+                              child: const Text("삭제"))
+                        ]);
+                  },
+                  backgroundColor: const Color.fromARGB(255, 105, 105, 105)),
+            ],
+          )
         ],
       ),
     );

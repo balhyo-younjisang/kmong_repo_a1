@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:kmong_repo_a1/apis/auth.dart';
+import 'package:kmong_repo_a1/widgets/auth_appbar.dart';
 import 'package:kmong_repo_a1/widgets/button.dart';
-import 'package:kmong_repo_a1/widgets/custom_appbar.dart';
 import 'package:kmong_repo_a1/widgets/input.dart';
 
 class LoginPage extends StatefulWidget {
@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: backgroundColor,
           appBar: const PreferredSize(
             preferredSize: Size.fromHeight(60),
-            child: AuthAppBar(),
+            child: CustomAppBar(),
           ),
           body: Center(
             child: Column(

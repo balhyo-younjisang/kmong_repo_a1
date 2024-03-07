@@ -18,13 +18,14 @@ Future<void> openExcelFile() async {
       for (var row in excel.tables[table]!.rows) {
         dynamic name = row[0].value;
         dynamic phoneNumber = row[1].value;
+        dynamic groupId = row[2].value;
 
         if (phoneNumber.toString().length == 10) {
           phoneNumber = '0$phoneNumber';
         }
 
         await db.rawInsert(
-            "INSERT INTO student(name, phone_number, group_id) VALUES('$name', '$phoneNumber', 0)");
+            "INSERT INTO student(name, phone_number, group_id) VALUES('$name', '$phoneNumber', '$groupId')");
       }
     }
   }
