@@ -108,6 +108,7 @@ class _StudentPageState extends State<StudentPage> {
 
                       if (context.mounted) {
                         Navigator.pushNamed(context, "/home");
+                        Get.snackbar("상태 저장 완료", "데이터가 성공적으로 수정되었습니다");
                       }
                     },
                     backgroundColor: Colors.yellow),
@@ -124,6 +125,7 @@ class _StudentPageState extends State<StudentPage> {
 
                       if (context.mounted) {
                         Navigator.pushNamed(context, "/home");
+                        Get.snackbar("데이터 삭제 완료", "데이터가 성공적으로 삭제되었습니다");
                       }
                     },
                     backgroundColor: Colors.yellow),
@@ -244,6 +246,7 @@ class _StudentPageState extends State<StudentPage> {
                                   return;
                                 }
                                 Navigator.pushNamed(context, "/home");
+                                Get.snackbar("데이터 삭제 완료", "데이터가 성공적으로 삭제되었습니다");
                               },
                               child: const Text("삭제"))
                         ]);
