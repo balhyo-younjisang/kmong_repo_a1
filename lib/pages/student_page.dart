@@ -177,7 +177,6 @@ class _StudentPageState extends State<StudentPage> {
                                         List.generate(groups.length, (index) {
                                       return groups[index]['name'];
                                     });
-                                    groupList.insert(0, "전체");
                                   }
                                 });
 

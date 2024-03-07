@@ -58,7 +58,6 @@ class _HomePageState extends State<HomePage> {
           groupList = List.generate(groups.length, (index) {
             return groups[index]['name'];
           });
-          groupList.insert(0, "전체");
         }
 
         if (students.isEmpty) {
@@ -303,35 +302,38 @@ class _HomePageState extends State<HomePage> {
                                     await openExcelFile();
                                     var db = await openDatabase("student.db",
                                         version: 1);
-                                    var groupId =
-                                        groupList.indexOf(_selectedGroup);
-                                    List<
-                                        Map<String,
-                                            dynamic>> students = await db.rawQuery(
-                                        "SELECT * FROM student WHERE group_id='$groupId'");
+                                    List<Map<String, dynamic>> students;
+                                    if (selectedGroupId == 0) {
+                                      students = await db
+                                          .rawQuery("SELECT * FROM student");
+                                    } else {
+                                      var groupId =
+                                          groupList.indexOf(_selectedGroup);
+                                      students = await db.rawQuery(
+                                          "SELECT * FROM student WHERE group_id='$groupId'");
+                                    }
 
-                                    Future.delayed(const Duration(seconds: 0))
-                                        .then((_) async {
-                                      setState(() {
-                                        selectedStudentList = List<bool>.filled(
-                                            students.length, false);
-                                        studentList = List.generate(
-                                          students.length,
-                                          (index) {
-                                            return Student(
-                                                name: students[index]['name'],
-                                                phoneNumber: students[index]
-                                                    ['phone_number'],
-                                                id: students[index]
-                                                    ['student_id'],
-                                                groupId: students[index]
-                                                    ['group_id']);
-                                          },
-                                        );
-                                      });
+                                    // debugPrint(students.toString());
+                                    setState(() {
+                                      selectedStudentList = List<bool>.filled(
+                                          students.length, false);
+                                      studentList = List.generate(
+                                        students.length,
+                                        (index) {
+                                          return Student(
+                                              name: students[index]['name'],
+                                              phoneNumber: students[index]
+                                                  ['phone_number'],
+                                              id: students[index]['student_id'],
+                                              groupId: students[index]
+                                                  ['group_id']);
+                                        },
+                                      );
                                     });
 
-                                    Get.back(closeOverlays: true);
+                                    Get.back();
+                                    Get.snackbar(
+                                        "데이터 추가 완료", "데이터가 성공적으로 추가되었습니다");
                                   },
                                   child: const Text('불러오기'),
                                 ),
