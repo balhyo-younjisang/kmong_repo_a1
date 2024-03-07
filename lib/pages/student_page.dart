@@ -180,6 +180,7 @@ class _StudentPageState extends State<StudentPage> {
                                 });
 
                                 Get.back();
+                                Get.snackbar("그룹 추가 완료", "그룹이 성공적으로 추가되었습니다");
                               },
                               child: const Text("추가"))
                         ]);
@@ -230,7 +231,8 @@ class _StudentPageState extends State<StudentPage> {
                                     groupList.indexOf(selectedRemoveGroupName);
 
                                 if (groupId == 0) {
-                                  Get.snackbar("오류", "전체 그룹은 삭제할 수 없습니다");
+                                  Get.snackbar(
+                                      "전체 그룹 삭제 불가", "전체 그룹은 삭제할 수 없습니다");
                                   return;
                                 }
 

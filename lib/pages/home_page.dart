@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
         resizeToAvoidBottomInset: false,
         backgroundColor: backgroundColor,
         appBar: const PreferredSize(
-          preferredSize: Size.fromHeight(60),
+          preferredSize: Size.fromHeight(100),
           child: AuthAppBar(),
         ),
         body: SafeArea(
@@ -214,7 +214,8 @@ class _HomePageState extends State<HomePage> {
                             }
                           }
                           if (selectCount != 1) {
-                            Get.snackbar("오류", "한 개의 데이터만 선택해주세요");
+                            Get.snackbar(
+                                "데이터는 한개만 선택 가능합니다", "한 개의 데이터만 선택해주세요");
                           } else {
                             Navigator.pushNamed(context, "/student",
                                 arguments: studentList[idx]);
@@ -237,7 +238,7 @@ class _HomePageState extends State<HomePage> {
                           }
 
                           if (selectStudentsPhoneNumber.isEmpty) {
-                            Get.snackbar("오류", "데이터를 1개 이상 선택해주세요");
+                            Get.snackbar("데이터를 선택해주세요", "데이터를 1개 이상 선택해주세요");
                           } else {
                             Navigator.pushNamed(context, "/send",
                                 arguments: selectStudentsPhoneNumber);
@@ -330,7 +331,7 @@ class _HomePageState extends State<HomePage> {
                                       });
                                     });
 
-                                    Get.back();
+                                    Get.back(closeOverlays: true);
                                   },
                                   child: const Text('불러오기'),
                                 ),
@@ -379,6 +380,8 @@ class _HomePageState extends State<HomePage> {
                                       });
 
                                       Get.back();
+                                      Get.snackbar(
+                                          "데이터 추가 완료", "데이터가 성공적으로 추가되었습니다");
                                     },
                                     child: const Text("추가"))
                               ]);

@@ -21,7 +21,7 @@ class JoinPage extends StatelessWidget {
         child: Scaffold(
           backgroundColor: backgroundColor,
           appBar: const PreferredSize(
-            preferredSize: Size.fromHeight(60),
+            preferredSize: Size.fromHeight(100),
             child: CustomAppBar(),
           ),
           body: Center(
