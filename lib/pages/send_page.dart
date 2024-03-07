@@ -50,8 +50,34 @@ class _SendPageState extends State<SendPage> {
       ),
       body: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  getVideo(
+                      ImageSource.gallery); //getImage 함수를 호출해서 갤러리에서 사진 가져오기
+                },
+                child: const Text("동영상 가져오기"),
+              ),
+              const SizedBox(
+                width: 20,
+              ),
+              video == null
+                  ? Container(
+                      width: 150,
+                      height: 100,
+                      color: Colors.grey,
+                    )
+                  : SizedBox(
+                      width: 150,
+                      height: 100,
+                      child: Image.file(File(video!.path))),
+            ],
+          ),
           SizedBox(
             width: 300,
+            height: 300,
             child: TextField(
               decoration: const InputDecoration(
                 label: Text("메시지를 입력해주세요"),
@@ -64,25 +90,7 @@ class _SendPageState extends State<SendPage> {
           const SizedBox(
             height: 20,
           ),
-          video == null
-              ? Container(
-                  width: 300,
-                  height: 300,
-                  color: Colors.grey,
-                )
-              : SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: Image.file(File(video!.path))),
-          const SizedBox(
-            height: 20,
-          ),
-          ElevatedButton(
-            onPressed: () {
-              getVideo(ImageSource.gallery); //getImage 함수를 호출해서 갤러리에서 사진 가져오기
-            },
-            child: const Text("동영상 가져오기"),
-          ),
+          Text("${selectStudent.length} 명"),
           const SizedBox(
             height: 30,
           ),
